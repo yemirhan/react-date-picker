@@ -2,6 +2,7 @@ import React, { Component } from 'react';
 import DatePicker from 'react-date-picker/src/entry';
 
 import LocaleOptions from './LocaleOptions';
+import NativeOptions from './NativeOptions';
 import ValueOptions from './ValueOptions';
 
 import './Test.less';
@@ -11,6 +12,7 @@ const now = new Date();
 export default class Test extends Component {
   state = {
     locale: null,
+    preferNative: false,
     value: now,
   }
 
@@ -19,6 +21,7 @@ export default class Test extends Component {
   render() {
     const {
       locale,
+      preferNative,
       value,
     } = this.state;
 
@@ -35,6 +38,10 @@ export default class Test extends Component {
               setState={setState}
               locale={locale}
             />
+            <NativeOptions
+              setState={setState}
+              preferNative={preferNative}
+            />
             <ValueOptions
               setState={setState}
               value={value}
@@ -44,6 +51,7 @@ export default class Test extends Component {
             <DatePicker
               locale={locale}
               onChange={this.onChange}
+              preferNative={preferNative}
               value={value}
             />
           </main>

@@ -10,6 +10,7 @@ import './DatePicker.less';
 
 import DateInput from './DateInput';
 
+import { getISOLocalDate } from './shared/dates';
 import {
   isCalendarType,
   isMaxDate,
@@ -43,6 +44,12 @@ export default class DatePicker extends Component {
     }
   }
 
+  onChangeNative = (event) => {
+    const { value } = event.target;
+
+    this.onChange(new Date(value));
+  }
+
   get formattedDate() {
     const { locale, value } = this.props;
 
@@ -59,6 +66,18 @@ export default class DatePicker extends Component {
         .replace('12', 'MM')
         .replace('11', 'DD')
     );
+  }
+
+  get displayNative() {
+    const { preferNative } = this.props;
+
+    const dateInputSupported = () => {
+      const input = document.createElement('input');
+      input.setAttribute('type', 'date');
+      return input.type !== 'text';
+    };
+
+    return preferNative && dateInputSupported();
   }
 
   onFocus = () => {
@@ -81,8 +100,25 @@ export default class DatePicker extends Component {
 
   stopPropagation = event => event.stopPropagation()
 
+  renderNativeInput() {
+    const { value } = this.props;
+
+    return (
+      <input
+        onChange={this.onChangeNative}
+        onFocus={this.stopPropagation}
+        type="date"
+        value={value ? getISOLocalDate(value) : ''}
+      />
+    );
+  }
+
   renderInput() {
-    const { locale, value } = this.props;
+    const {
+      locale,
+      preferNative,
+      value,
+    } = this.props;
 
     return (
       <div className="react-date-picker__button">
@@ -159,14 +195,16 @@ export default class DatePicker extends Component {
   }
 
   render() {
+    const { displayNative } = this;
+
     return (
       <div
         className="react-date-picker"
         onFocus={this.onFocus}
         onBlur={this.onBlur}
       >
-        {this.renderInput()}
-        {this.renderCalendar()}
+        {displayNative ? this.renderNativeInput() : this.renderInput()}
+        {displayNative || this.renderCalendar()}
       </div>
     );
   }
@@ -179,6 +217,7 @@ DatePicker.propTypes = {
   maxDate: isMaxDate,
   minDate: isMinDate,
   onChange: PropTypes.func,
+  preferNative: PropTypes.bool,
   showWeekNumbers: PropTypes.bool,
   value: PropTypes.instanceOf(Date),
 };
