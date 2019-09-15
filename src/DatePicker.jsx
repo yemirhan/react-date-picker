@@ -8,6 +8,7 @@ import Fit from 'react-fit';
 import Calendar from 'react-calendar/dist/entry.nostyle';
 
 import DateInput from './DateInput';
+import Button from './Button';
 
 import { isMaxDate, isMinDate } from './shared/propTypes';
 import { callIfDefined } from './shared/utils';
@@ -102,8 +103,6 @@ export default class DatePicker extends PureComponent {
     this.setState(prevState => ({ isOpen: !prevState.isOpen }));
   }
 
-  stopPropagation = event => event.stopPropagation();
-
   clear = () => this.onChange(null);
 
   handleOutsideActionListeners(shouldListen) {
@@ -177,30 +176,24 @@ export default class DatePicker extends PureComponent {
           showLeadingZeros={showLeadingZeros}
           value={valueFrom}
         />
-        {clearIcon !== null && (
-          <button
-            aria-label={clearAriaLabel}
-            className={`${baseClassName}__clear-button ${baseClassName}__button`}
-            disabled={disabled}
-            onClick={this.clear}
-            onFocus={this.stopPropagation}
-            type="button"
-          >
-            {clearIcon}
-          </button>
-        )}
-        {calendarIcon !== null && !disableCalendar && (
-          <button
-            aria-label={calendarAriaLabel}
+        <Button
+          ariaLabel={clearAriaLabel}
+          className={`${baseClassName}__clear-button ${baseClassName}__button`}
+          disabled={disabled}
+          onClick={this.clear}
+        >
+          {clearIcon}
+        </Button>
+        {!disableCalendar && (
+          <Button
+            ariaLabel={calendarAriaLabel}
             className={`${baseClassName}__calendar-button ${baseClassName}__button`}
             disabled={disabled}
             onBlur={this.resetValue}
             onClick={this.toggleCalendar}
-            onFocus={this.stopPropagation}
-            type="button"
           >
             {calendarIcon}
-          </button>
+          </Button>
         )}
       </div>
     );
