@@ -48,6 +48,7 @@ export default function Input({
   onKeyDown,
   onKeyUp,
   placeholder,
+  readOnly,
   required,
   showLeadingZeros,
   step,
@@ -81,6 +82,7 @@ export default function Input({
         }
       }}
       placeholder={placeholder}
+      readOnly={readOnly}
       ref={(ref) => {
         if (ref) {
           updateInputWidth(ref);
@@ -108,6 +110,7 @@ Input.propTypes = {
   onChange: PropTypes.func,
   onKeyDown: PropTypes.func,
   onKeyUp: PropTypes.func,
+  readOnly: PropTypes.bool,
   required: PropTypes.bool,
   showLeadingZeros: PropTypes.bool,
   step: PropTypes.number,

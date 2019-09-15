@@ -64,13 +64,18 @@ export default class DatePicker extends PureComponent {
     });
 
     const { onChange } = this.props;
+
     if (onChange) {
       onChange(value);
     }
   }
 
   onFocus = (event) => {
-    const { disabled, onFocus } = this.props;
+    const { disabled, onFocus, readOnly } = this.props;
+
+    if (readOnly) {
+      return;
+    }
 
     if (onFocus) {
       onFocus(event);
@@ -133,6 +138,7 @@ export default class DatePicker extends PureComponent {
       monthPlaceholder,
       name,
       nativeInputAriaLabel,
+      readOnly,
       required,
       returnValue,
       showLeadingZeros,
@@ -172,6 +178,7 @@ export default class DatePicker extends PureComponent {
           minDate={minDate}
           name={name}
           onChange={this.onChange}
+          readOnly={readOnly}
           required={required}
           returnValue={returnValue}
           showLeadingZeros={showLeadingZeros}
@@ -181,7 +188,7 @@ export default class DatePicker extends PureComponent {
           <button
             aria-label={clearAriaLabel}
             className={`${baseClassName}__clear-button ${baseClassName}__button`}
-            disabled={disabled}
+            disabled={disabled || readOnly}
             onClick={this.clear}
             onFocus={this.stopPropagation}
             type="button"
@@ -193,7 +200,7 @@ export default class DatePicker extends PureComponent {
           <button
             aria-label={calendarAriaLabel}
             className={`${baseClassName}__calendar-button ${baseClassName}__button`}
-            disabled={disabled}
+            disabled={disabled || readOnly}
             onBlur={this.resetValue}
             onClick={this.toggleCalendar}
             onFocus={this.stopPropagation}
@@ -340,6 +347,7 @@ DatePicker.propTypes = {
   onCalendarOpen: PropTypes.func,
   onChange: PropTypes.func,
   onFocus: PropTypes.func,
+  readOnly: PropTypes.bool,
   required: PropTypes.bool,
   returnValue: PropTypes.oneOf(['start', 'end', 'range']),
   showLeadingZeros: PropTypes.bool,

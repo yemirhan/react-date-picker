@@ -283,6 +283,7 @@ export default class DateInput extends PureComponent {
       isCalendarOpen,
       maxDate,
       minDate,
+      readOnly,
       required,
     } = this.props;
 
@@ -294,6 +295,7 @@ export default class DateInput extends PureComponent {
       onChange: this.onChange,
       onKeyDown: this.onKeyDown,
       onKeyUp: this.onKeyUp,
+      readOnly,
       // This is only for showing validity when editing
       required: required || isCalendarOpen,
       itemRef: (ref, name) => {
@@ -535,6 +537,7 @@ export default class DateInput extends PureComponent {
       minDate,
       name,
       nativeInputAriaLabel,
+      readOnly,
       required,
     } = this.props;
     const { value } = this.state;
@@ -548,6 +551,7 @@ export default class DateInput extends PureComponent {
         minDate={minDate || defaultMinDate}
         name={name}
         onChange={this.onChangeNative}
+        readOnly={readOnly}
         required={required}
         value={value}
         valueType={this.valueType}
@@ -598,6 +602,7 @@ DateInput.propTypes = {
   name: PropTypes.string,
   nativeInputAriaLabel: PropTypes.string,
   onChange: PropTypes.func,
+  readOnly: PropTypes.bool,
   required: PropTypes.bool,
   returnValue: PropTypes.oneOf(['start', 'end', 'range']),
   showLeadingZeros: PropTypes.bool,

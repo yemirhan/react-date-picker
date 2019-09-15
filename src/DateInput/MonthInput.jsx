@@ -37,6 +37,7 @@ MonthInput.propTypes = {
   onKeyDown: PropTypes.func,
   onKeyUp: PropTypes.func,
   placeholder: PropTypes.string,
+  readOnly: PropTypes.bool,
   required: PropTypes.bool,
   showLeadingZeros: PropTypes.bool,
   value: PropTypes.number,

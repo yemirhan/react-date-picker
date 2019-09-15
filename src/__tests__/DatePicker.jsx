@@ -38,6 +38,16 @@ describe('DatePicker', () => {
     expect(dateInput.prop('disabled')).toBeTruthy();
   });
 
+  it('passes readOnly flag to DateInput', () => {
+    const component = mount(
+      <DatePicker readOnly />
+    );
+
+    const dateInput = component.find('DateInput');
+
+    expect(dateInput.prop('readOnly')).toBeTruthy();
+  });
+
   it('passes format to DateInput', () => {
     const format = 'y-MM-dd';
 

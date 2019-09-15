@@ -129,6 +129,19 @@ describe('MonthSelect', () => {
     expect(select.prop('disabled')).toBeTruthy();
   });
 
+  it('makes select disabled given readOnly flag', () => {
+    const component = mount(
+      <MonthSelect
+        {...defaultProps}
+        readOnly
+      />
+    );
+
+    const select = component.find('select');
+
+    expect(select.prop('disabled')).toBeTruthy();
+  });
+
   it('is not required select by default', () => {
     const component = mount(
       <MonthSelect {...defaultProps} />

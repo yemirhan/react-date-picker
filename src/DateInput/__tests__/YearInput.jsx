@@ -115,6 +115,29 @@ describe('YearInput', () => {
     expect(input.prop('disabled')).toBeTruthy();
   });
 
+  it('does not make input read only by default', () => {
+    const component = mount(
+      <YearInput {...defaultProps} />
+    );
+
+    const input = component.find('input');
+
+    expect(input.prop('readOnly')).toBeFalsy();
+  });
+
+  it('makes input read only given readOnly flag', () => {
+    const component = mount(
+      <YearInput
+        {...defaultProps}
+        readOnly
+      />
+    );
+
+    const input = component.find('input');
+
+    expect(input.prop('readOnly')).toBeTruthy();
+  });
+
   it('is not required input by default', () => {
     const component = mount(
       <YearInput {...defaultProps} />

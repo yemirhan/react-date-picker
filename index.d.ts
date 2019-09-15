@@ -12,6 +12,7 @@ declare module "react-date-picker" {
     format?: string;
     isOpen?: boolean;
     name?: string;
+    readOnly?: boolean;
     required?: boolean;
     showLeadingZeros?: boolean;
   }

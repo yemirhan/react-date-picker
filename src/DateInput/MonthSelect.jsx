@@ -10,6 +10,7 @@ import { min, max } from '../shared/utils';
 export default function MonthSelect({
   ariaLabel,
   className,
+  disabled,
   itemRef,
   locale,
   maxDate,
@@ -18,6 +19,7 @@ export default function MonthSelect({
   year,
   value,
   placeholder,
+  readOnly,
   ...otherProps
 }) {
   const maxMonth = min(12, maxDate && year === getYear(maxDate) && getMonth(maxDate));
@@ -33,6 +35,7 @@ export default function MonthSelect({
         `${className}__input`,
         `${className}__${name}`,
       )}
+      disabled={disabled || readOnly}
       name={name}
       ref={(ref) => {
         if (itemRef) {
@@ -49,12 +52,12 @@ export default function MonthSelect({
       )}
       {dates.map((date) => {
         const month = getMonth(date);
-        const disabled = month < minMonth || month > maxMonth;
+        const optionDisabled = month < minMonth || month > maxMonth;
 
         return (
           <option
             key={month}
-            disabled={disabled}
+            disabled={optionDisabled}
             value={month}
           >
             {formatter(locale, date)}
@@ -77,6 +80,7 @@ MonthSelect.propTypes = {
   onKeyDown: PropTypes.func,
   onKeyUp: PropTypes.func,
   placeholder: PropTypes.string,
+  readOnly: PropTypes.bool,
   required: PropTypes.bool,
   short: PropTypes.bool,
   value: PropTypes.number,

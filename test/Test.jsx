@@ -40,6 +40,7 @@ export default class Test extends PureComponent {
     maxDetail: 'month',
     minDate: new Date(1995, now.getUTCMonth() + 1, 15, 12),
     minDetail: 'century',
+    readOnly: false,
     returnValue: 'start',
     required: true,
     showLeadingZeros: true,
@@ -58,6 +59,7 @@ export default class Test extends PureComponent {
       maxDetail,
       minDate,
       minDetail,
+      readOnly,
       returnValue,
       required,
       showLeadingZeros,
@@ -103,6 +105,7 @@ export default class Test extends PureComponent {
             />
             <ViewOptions
               disabled={disabled}
+              readOnly={readOnly}
               setState={setState}
               showLeadingZeros={showLeadingZeros}
               showNeighboringMonth={showNeighboringMonth}
@@ -133,6 +136,7 @@ export default class Test extends PureComponent {
                 onCalendarClose={() => console.log('Calendar closed')}
                 onCalendarOpen={() => console.log('Calendar opened')}
                 onChange={this.onChange}
+                readOnly={readOnly}
                 required={required}
                 returnValue={returnValue}
                 showLeadingZeros={showLeadingZeros}

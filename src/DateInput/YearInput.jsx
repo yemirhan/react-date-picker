@@ -46,6 +46,7 @@ YearInput.propTypes = {
   onKeyDown: PropTypes.func,
   onKeyUp: PropTypes.func,
   placeholder: PropTypes.string,
+  readOnly: PropTypes.bool,
   required: PropTypes.bool,
   value: PropTypes.number,
   valueType: isValueType,
