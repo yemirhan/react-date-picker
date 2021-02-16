@@ -7,7 +7,7 @@
   "types": "./index.d.ts",
   "scripts": {
     "build": "yarn build-js && yarn copy-styles && yarn build-styles && yarn copy-types",
-    "build-js": "babel src -d dist --ignore \"**/*.spec.js,**/*.spec.jsx\"",
+    "build-js": "babel src -d dist --ignore \"**/*.spec.js,**/*.spec.jsx\" --extensions \".ts,.tsx\"",
     "build-styles": "lessc ./dist/DatePicker.less ./dist/DatePicker.css",
     "clean": "rimraf dist",
     "copy-styles": "node ./copy-styles.js",
@@ -88,6 +88,7 @@
     "@babel/plugin-proposal-class-properties": "^7.8.0",
     "@babel/preset-env": "^7.9.0",
     "@babel/preset-react": "^7.9.0",
+    "@babel/preset-typescript": "^7.12.0",
     "@wojtekmaj/enzyme-adapter-react-17": "^0.3.1",
     "babel-eslint": "^10.0.0",
     "enzyme": "^3.10.0",

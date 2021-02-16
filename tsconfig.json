@@ -1,0 +1,10 @@
+{
+  "compilerOptions": {
+    "allowJs": true,
+    "declaration": true,
+    "emitDeclarationOnly": true,
+    "jsx": "react",
+    "out": "index.d.ts",
+  },
+  "include": ["src/entry.ts", "./src/entry.nostyle.ts"]
+}
