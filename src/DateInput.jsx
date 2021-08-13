@@ -1,4 +1,4 @@
-import React, { PureComponent } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import PropTypes from 'prop-types';
 import { getYear, getMonthHuman, getDate } from '@wojtekmaj/date-utils';
 
@@ -30,14 +30,6 @@ function toDate(value) {
   }
 
   return new Date(value);
-}
-
-function datesAreDifferent(date1, date2) {
-  return (
-    (date1 && !date2)
-    || (!date1 && date2)
-    || (date1 && date2 && date1.getTime() !== date2.getTime())
-  );
 }
 
 /**
@@ -114,7 +106,7 @@ function focus(element) {
   }
 }
 
-function renderCustomInputs(placeholder, elementFunctions, allowMultipleInstances) {
+function renderCustomInputsHelper(placeholder, elementFunctions, allowMultipleInstances) {
   const usedFunctions = [];
   const pattern = new RegExp(
     Object.keys(elementFunctions).map((el) => `${el}+`).join('|'), 'g',
@@ -152,89 +144,65 @@ function renderCustomInputs(placeholder, elementFunctions, allowMultipleInstance
     }, []);
 }
 
-export default class DateInput extends PureComponent {
-  static getDerivedStateFromProps(nextProps, prevState) {
-    const {
-      minDate, maxDate, maxDetail,
-    } = nextProps;
+export default function DateInput({
+  autoFocus,
+  className,
+  dayAriaLabel,
+  dayPlaceholder,
+  defaultIsCalendarOpen,
+  disabled,
+  format,
+  isCalendarOpen: isCalendarOpenProps,
+  locale,
+  maxDate,
+  maxDetail,
+  minDate,
+  monthAriaLabel,
+  monthPlaceholder,
+  name,
+  nativeInputAriaLabel,
+  onChange: onChangeProps,
+  required,
+  returnValue,
+  showLeadingZeros,
+  yearAriaLabel,
+  yearPlaceholder,
+  value: valueProps,
+}) {
+  const [value, setValue] = useState();
+  const [isCalendarOpenState, setIsCalendarOpenState] = useState(defaultIsCalendarOpen);
+  const [day, setDay] = useState();
+  const [month, setMonth] = useState();
+  const [year, setYear] = useState();
+  const dayInput = useRef();
+  const monthInput = useRef();
+  const yearInput = useRef();
 
-    const nextState = {};
-
-    /**
-     * If isCalendarOpen flag has changed, we have to update it.
-     * It's saved in state purely for use in getDerivedStateFromProps.
-     */
-    if (nextProps.isCalendarOpen !== prevState.isCalendarOpen) {
-      nextState.isCalendarOpen = nextProps.isCalendarOpen;
-    }
-
-    /**
-     * If the next value is different from the current one  (with an exception of situation in
-     * which values provided are limited by minDate and maxDate so that the dates are the same),
-     * get a new one.
-     */
+  useEffect(() => {
     const nextValue = getDetailValueFrom({
-      value: nextProps.value, minDate, maxDate, maxDetail,
+      value: valueProps, minDate, maxDate, maxDetail,
     });
-    const values = [nextValue, prevState.value];
-    if (
-      // Toggling calendar visibility resets values
-      nextState.isCalendarOpen // Flag was toggled
-      || datesAreDifferent(
-        ...values.map((value) => getDetailValueFrom({
-          value, minDate, maxDate, maxDetail,
-        })),
-      )
-      || datesAreDifferent(
-        ...values.map((value) => getDetailValueTo({
-          value, minDate, maxDate, maxDetail,
-        })),
-      )
-    ) {
-      if (nextValue) {
-        nextState.year = getYear(nextValue).toString();
-        nextState.month = getMonthHuman(nextValue).toString();
-        nextState.day = getDate(nextValue).toString();
-      } else {
-        nextState.year = null;
-        nextState.month = null;
-        nextState.day = null;
-      }
-      nextState.value = nextValue;
+
+    if (nextValue) {
+      setYear(getYear(nextValue).toString());
+      setMonth(getMonthHuman(nextValue).toString());
+      setDay(getDate(nextValue).toString());
+    } else {
+      setYear(null);
+      setMonth(null);
+      setDay(null);
     }
+    setValue(nextValue);
+  }, [maxDate?.getTime(), maxDetail, minDate?.getTime(), valueProps]);
 
-    return nextState;
-  }
+  const isCalendarOpen = isCalendarOpenProps ?? isCalendarOpenState;
 
-  state = {
-    year: null,
-    month: null,
-    day: null,
-  };
-
-  get formatDate() {
-    const { maxDetail } = this.props;
-
-    const options = { year: 'numeric' };
-    const level = allViews.indexOf(maxDetail);
-    if (level >= 2) {
-      options.month = 'numeric';
-    }
-    if (level >= 3) {
-      options.day = 'numeric';
-    }
-
-    return getFormatter(options);
-  }
+  const valueType = getValueType(maxDetail);
 
   /**
    * Gets current value in a desired format.
    */
-  getProcessedValue(value) {
-    const {
-      minDate, maxDate, maxDetail, returnValue,
-    } = this.props;
-
+  function getProcessedValue(valueToProcess) {
     const processFunction = (() => {
       switch (returnValue) {
         case 'start': return getDetailValueFrom;
@@ -245,92 +213,114 @@ export default class DateInput extends PureComponent {
     })();
 
     return processFunction({
-      value, minDate, maxDate, maxDetail,
+      value: valueToProcess, minDate, maxDate, maxDetail,
     });
   }
 
-  get divider() {
-    const dividers = this.placeholder.match(/[^0-9a-z]/i);
-    return dividers ? dividers[0] : null;
+  /**
+   * Called after internal onChange. Checks input validity. If all fields are valid,
+   * calls props.onChange.
+   */
+  function onChangeExternal() {
+    if (!onChangeProps) {
+      return;
+    }
+
+    const formElements = [dayInput.current, monthInput.current, yearInput.current].filter(Boolean);
+
+    const values = {};
+    formElements.forEach((formElement) => {
+      values[formElement.name] = formElement.value;
+    });
+
+    if (formElements.every((formElement) => !formElement.value)) {
+      onChangeProps(null, false);
+    } else if (
+      formElements.every((formElement) => formElement.value && formElement.validity.valid)
+    ) {
+      const resultYear = parseInt(values.year, 10);
+      const resultMonthIndex = parseInt(values.month, 10) - 1 || 0;
+      const resultDay = parseInt(values.day || 1, 10);
+
+      const proposedValue = new Date();
+      proposedValue.setFullYear(resultYear, resultMonthIndex, resultDay);
+      proposedValue.setHours(0, 0, 0, 0);
+      const processedValue = getProcessedValue(proposedValue);
+      onChangeProps(processedValue, false);
+    }
   }
 
-  get placeholder() {
-    const { format, locale } = this.props;
+  /**
+   * Called when non-native date input is changed.
+   */
+  function onChange(event) {
+    const { name: targetName, value: targetValue } = event.target;
 
+    const setFunction = (() => {
+      switch (targetName) {
+        case 'day': return setDay;
+        case 'month': return setMonth;
+        case 'year': return setYear;
+        default: throw new Error('Invalid target name.');
+      }
+    })();
+
+    setFunction(targetValue);
+    onChangeExternal();
+  }
+
+  const formatDate = (() => {
+    const options = { year: 'numeric' };
+    const level = allViews.indexOf(maxDetail);
+    if (level >= 2) {
+      options.month = 'numeric';
+    }
+    if (level >= 3) {
+      options.day = 'numeric';
+    }
+
+    return getFormatter(options);
+  })();
+
+  const placeholder = (() => {
     if (format) {
       return format;
     }
 
-    const year = 2017;
-    const monthIndex = 11;
-    const day = 11;
+    const testYear = 2017;
+    const testMonthIndex = 11;
+    const testDay = 11;
 
-    const date = new Date(year, monthIndex, day);
-    const formattedDate = this.formatDate(locale, date);
+    const date = new Date(testYear, testMonthIndex, testDay);
+    const formattedDate = formatDate(locale, date);
 
     const datePieces = ['year', 'month', 'day'];
     const datePieceReplacements = ['y', 'M', 'd'];
 
-    function formatDatePiece(name, dateToFormat) {
-      return getFormatter({ useGrouping: false, [name]: 'numeric' })(locale, dateToFormat).match(/\d{1,}/);
+    function formatDatePiece(datePieceName, dateToFormat) {
+      return getFormatter({ useGrouping: false, [datePieceName]: 'numeric' })(locale, dateToFormat).match(/\d{1,}/);
     }
 
-    let placeholder = formattedDate;
+    let result = formattedDate;
     datePieces.forEach((datePiece, index) => {
       const formattedDatePiece = formatDatePiece(datePiece, date);
       const datePieceReplacement = datePieceReplacements[index];
-      placeholder = placeholder.replace(formattedDatePiece, datePieceReplacement);
+      result = result.replace(formattedDatePiece, datePieceReplacement);
     });
 
-    return placeholder;
-  }
+    return result;
+  })();
 
-  get commonInputProps() {
-    const {
-      className,
-      disabled,
-      isCalendarOpen,
-      maxDate,
-      minDate,
-      required,
-    } = this.props;
+  const divider = (() => {
+    const dividers = placeholder.match(/[^0-9a-z]/i);
+    return dividers ? dividers[0] : null;
+  })();
 
-    return {
-      className,
-      disabled,
-      maxDate: maxDate || defaultMaxDate,
-      minDate: minDate || defaultMinDate,
-      onChange: this.onChange,
-      onKeyDown: this.onKeyDown,
-      onKeyUp: this.onKeyUp,
-      // This is only for showing validity when editing
-      required: required || isCalendarOpen,
-      itemRef: (ref, name) => {
-        // Save a reference to each input field
-        this[`${name}Input`] = ref;
-      },
-    };
-  }
-
-  get valueType() {
-    const { maxDetail } = this.props;
-
-    return getValueType(maxDetail);
-  }
-
-  onClick = (event) => {
-    if (event.target === event.currentTarget) {
-      // Wrapper was directly clicked
-      const firstInput = event.target.children[1];
-      focus(firstInput);
-    }
-  }
-
-  onKeyDown = (event) => {
+  function onKeyDown(event) {
     switch (event.key) {
       case 'ArrowLeft':
       case 'ArrowRight':
-      case this.divider: {
+      case divider: {
         event.preventDefault();
 
         const { target: input } = event;
@@ -343,7 +333,7 @@ export default class DateInput extends PureComponent {
     }
   }
 
-  onKeyUp = (event) => {
+  function onKeyUp(event) {
     const { key, target: input } = event;
 
     const isNumberKey = !isNaN(parseInt(key, 10));
@@ -352,7 +342,7 @@ export default class DateInput extends PureComponent {
       return;
     }
 
-    const { value } = input;
+    const { value: inputValue } = input;
     const max = input.getAttribute('max');
 
     /**
@@ -361,100 +351,77 @@ export default class DateInput extends PureComponent {
      * However, given 2, smallers possible number would be 20, and thus keeping the focus in
      * this field doesn't make sense.
      */
-    if ((value * 10 > max) || (value.length >= max.length)) {
+    if ((inputValue * 10 > max) || (inputValue.length >= max.length)) {
       const property = 'nextElementSibling';
       const nextInput = findInput(input, property);
       focus(nextInput);
     }
   }
 
-  /**
-   * Called when non-native date input is changed.
-   */
-  onChange = (event) => {
-    const { name, value } = event.target;
-
-    this.setState(
-      { [name]: value },
-      this.onChangeExternal,
-    );
-  }
+  const commonInputProps = {
+    className,
+    disabled,
+    maxDate: maxDate || defaultMaxDate,
+    minDate: minDate || defaultMinDate,
+    onChange,
+    onKeyDown,
+    onKeyUp,
+    // This is only for showing validity when editing
+    required: required || isCalendarOpen,
+  };
 
   /**
    * Called when native date input is changed.
    */
-  onChangeNative = (event) => {
-    const { onChange } = this.props;
-    const { value } = event.target;
+  function onChangeNative(event) {
+    const { value: inputValue } = event.target;
 
-    if (!onChange) {
+    if (!onChangeProps) {
       return;
     }
 
-    const processedValue = (() => {
-      if (!value) {
-        return null;
-      }
-
-      const [yearString, monthString, dayString] = value.split('-');
-      const year = parseInt(yearString, 10);
-      const monthIndex = parseInt(monthString, 10) - 1 || 0;
-      const day = parseInt(dayString, 10) || 1;
+    const processedValue = inputValue ? (() => {
+      const [yearString, monthString, dayString] = inputValue.split('-');
+      const resultYear = parseInt(yearString, 10);
+      const resultMonthIndex = parseInt(monthString, 10) - 1 || 0;
+      const resultDay = parseInt(dayString, 10) || 1;
 
       const proposedValue = new Date();
-      proposedValue.setFullYear(year, monthIndex, day);
+      proposedValue.setFullYear(resultYear, resultMonthIndex, resultDay);
       proposedValue.setHours(0, 0, 0, 0);
 
       return proposedValue;
-    })();
+    })() : null;
 
-    onChange(processedValue, false);
+    onChangeProps(processedValue, false);
   }
 
-  /**
-   * Called after internal onChange. Checks input validity. If all fields are valid,
-   * calls props.onChange.
-   */
-  onChangeExternal = () => {
-    const { onChange } = this.props;
-
-    if (!onChange) {
-      return;
-    }
-
-    const formElements = [this.dayInput, this.monthInput, this.yearInput].filter(Boolean);
-
-    const values = {};
-    formElements.forEach((formElement) => {
-      values[formElement.name] = formElement.value;
-    });
-
-    if (formElements.every((formElement) => !formElement.value)) {
-      onChange(null, false);
-    } else if (
-      formElements.every((formElement) => formElement.value && formElement.validity.valid)
-    ) {
-      const year = parseInt(values.year, 10);
-      const monthIndex = parseInt(values.month, 10) - 1 || 0;
-      const day = parseInt(values.day || 1, 10);
-
-      const proposedValue = new Date();
-      proposedValue.setFullYear(year, monthIndex, day);
-      proposedValue.setHours(0, 0, 0, 0);
-      const processedValue = this.getProcessedValue(proposedValue);
-      onChange(processedValue, false);
+  function onClick() {
+    if (event.target === event.currentTarget) {
+      // Wrapper was directly clicked
+      const firstInput = event.target.children[1];
+      focus(firstInput);
     }
   }
 
-  renderDay = (currentMatch, index) => {
-    const {
-      autoFocus,
-      dayAriaLabel,
-      dayPlaceholder,
-      showLeadingZeros,
-    } = this.props;
-    const { day, month, year } = this.state;
+  function renderNativeInput() {
+    return (
+      <NativeInput
+        key="date"
+        ariaLabel={nativeInputAriaLabel}
+        disabled={disabled}
+        maxDate={maxDate || defaultMaxDate}
+        minDate={minDate || defaultMinDate}
+        name={name}
+        onChange={onChangeNative}
+        required={required}
+        value={value}
+        valueType={valueType}
+      />
+    );
+  }
 
+  function renderDay(currentMatch, index) {
     if (currentMatch && currentMatch.length > 2) {
       throw new Error(`Unsupported token: ${currentMatch}`);
     }
@@ -464,7 +431,7 @@ export default class DateInput extends PureComponent {
     return (
       <DayInput
         key="day"
-        {...this.commonInputProps}
+        {...commonInputProps}
         ariaLabel={dayAriaLabel}
         autoFocus={index === 0 && autoFocus}
         month={month}
@@ -472,20 +439,12 @@ export default class DateInput extends PureComponent {
         showLeadingZeros={showLeadingZerosFromFormat || showLeadingZeros}
         value={day}
         year={year}
+        itemRef={dayInput}
       />
     );
   }
 
-  renderMonth = (currentMatch, index) => {
-    const {
-      autoFocus,
-      locale,
-      monthAriaLabel,
-      monthPlaceholder,
-      showLeadingZeros,
-    } = this.props;
-    const { month, year } = this.state;
-
+  function renderMonth(currentMatch, index) {
     if (currentMatch && currentMatch.length > 4) {
       throw new Error(`Unsupported token: ${currentMatch}`);
     }
@@ -494,7 +453,7 @@ export default class DateInput extends PureComponent {
       return (
         <MonthSelect
           key="month"
-          {...this.commonInputProps}
+          {...commonInputProps}
           ariaLabel={monthAriaLabel}
           autoFocus={index === 0 && autoFocus}
           locale={locale}
@@ -502,6 +461,7 @@ export default class DateInput extends PureComponent {
           short={currentMatch.length === 3}
           value={month}
           year={year}
+          itemRef={monthInput}
         />
       );
     }
@@ -511,90 +471,55 @@ export default class DateInput extends PureComponent {
     return (
       <MonthInput
         key="month"
-        {...this.commonInputProps}
+        {...commonInputProps}
         ariaLabel={monthAriaLabel}
         autoFocus={index === 0 && autoFocus}
         placeholder={monthPlaceholder}
         showLeadingZeros={showLeadingZerosFromFormat || showLeadingZeros}
         value={month}
         year={year}
+        itemRef={monthInput}
       />
     );
   }
 
-  renderYear = (currentMatch, index) => {
-    const { autoFocus, yearAriaLabel, yearPlaceholder } = this.props;
-    const { year } = this.state;
-
+  function renderYear(currentMatch, index) {
     return (
       <YearInput
         key="year"
-        {...this.commonInputProps}
+        {...commonInputProps}
         ariaLabel={yearAriaLabel}
         autoFocus={index === 0 && autoFocus}
         placeholder={yearPlaceholder}
         value={year}
-        valueType={this.valueType}
+        valueType={valueType}
+        itemRef={yearInput}
       />
     );
   }
 
-  renderCustomInputs() {
-    const { placeholder } = this;
-    const { format } = this.props;
-
+  function renderCustomInputs() {
     const elementFunctions = {
-      d: this.renderDay,
-      M: this.renderMonth,
-      y: this.renderYear,
+      d: renderDay,
+      M: renderMonth,
+      y: renderYear,
     };
 
     const allowMultipleInstances = typeof format !== 'undefined';
-    return renderCustomInputs(placeholder, elementFunctions, allowMultipleInstances);
+    return renderCustomInputsHelper(placeholder, elementFunctions, allowMultipleInstances);
   }
 
-  renderNativeInput() {
-    const {
-      disabled,
-      maxDate,
-      minDate,
-      name,
-      nativeInputAriaLabel,
-      required,
-    } = this.props;
-    const { value } = this.state;
-
-    return (
-      <NativeInput
-        key="date"
-        ariaLabel={nativeInputAriaLabel}
-        disabled={disabled}
-        maxDate={maxDate || defaultMaxDate}
-        minDate={minDate || defaultMinDate}
-        name={name}
-        onChange={this.onChangeNative}
-        required={required}
-        value={value}
-        valueType={this.valueType}
-      />
-    );
-  }
-
-  render() {
-    const { className } = this.props;
-
-    /* eslint-disable jsx-a11y/click-events-have-key-events */
-    /* eslint-disable jsx-a11y/no-static-element-interactions */
-    return (
-      <div
-        className={className}
-        onClick={this.onClick}
-      >
-        {this.renderNativeInput()}
-        {this.renderCustomInputs()}
-      </div>
-    );
-  }
+  /* eslint-disable jsx-a11y/click-events-have-key-events */
+  /* eslint-disable jsx-a11y/no-static-element-interactions */
+  return (
+    <div
+      className={className}
+      onClick={onClick}
+    >
+      {renderNativeInput()}
+      {renderCustomInputs()}
+    </div>
+  );
 }
 
 DateInput.defaultProps = {
@@ -613,6 +538,7 @@ DateInput.propTypes = {
   className: PropTypes.string.isRequired,
   dayAriaLabel: PropTypes.string,
   dayPlaceholder: PropTypes.string,
+  defaultIsCalendarOpen: PropTypes.bool,
   disabled: PropTypes.bool,
   format: PropTypes.string,
   isCalendarOpen: PropTypes.bool,

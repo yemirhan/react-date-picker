@@ -4,7 +4,7 @@ import mergeClassNames from 'merge-class-names';
 import { getYear, getMonthHuman } from '@wojtekmaj/date-utils';
 
 import { formatMonth, formatShortMonth } from '../shared/dateFormatter';
-import { isMaxDate, isMinDate } from '../shared/propTypes';
+import { isMaxDate, isMinDate, isRef } from '../shared/propTypes';
 import { safeMin, safeMax } from '../shared/utils';
 
 export default function MonthSelect({
@@ -39,11 +39,7 @@ export default function MonthSelect({
       )}
       data-input="true"
       name={name}
-      ref={(ref) => {
-        if (itemRef) {
-          itemRef(ref, name);
-        }
-      }}
+      ref={itemRef}
       value={value !== null ? value : ''}
       {...otherProps}
     >
@@ -74,7 +70,7 @@ MonthSelect.propTypes = {
   ariaLabel: PropTypes.string,
   className: PropTypes.string.isRequired,
   disabled: PropTypes.bool,
-  itemRef: PropTypes.func,
+  itemRef: isRef,
   locale: PropTypes.string,
   maxDate: isMaxDate,
   minDate: isMinDate,
