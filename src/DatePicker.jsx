@@ -58,9 +58,21 @@ export default class DatePicker extends PureComponent {
     }
   }
 
-  // eslint-disable-next-line react/destructuring-assignment
-  onChange = (value, closeCalendar = this.props.closeCalendar) => {
-    const { onChange } = this.props;
+  onKeyDown = (event) => {
+    // Close calendar on Esc key press
+    if (event.key === 'Escape') {
+      this.closeCalendar();
+    }
+  }
+
+  onChange = (value, closeCalendarArgs) => {
+    const {
+      closeCalendar: closeCalendarProps,
+      closeCalendarOnSelect: closeCalendarOnSelectProps,
+      onChange,
+    } = this.props;
+
+    const closeCalendar = closeCalendarArgs ?? closeCalendarOnSelectProps ?? closeCalendarProps;
 
     if (closeCalendar) {
       this.closeCalendar();
@@ -111,11 +123,15 @@ export default class DatePicker extends PureComponent {
   clear = () => this.onChange(null);
 
   handleOutsideActionListeners(shouldListen) {
+    const { closeCalendarOnEsc } = this.props;
     const { isOpen } = this.state;
 
     const shouldListenWithFallback = typeof shouldListen !== 'undefined' ? shouldListen : isOpen;
     const fnName = shouldListenWithFallback ? 'addEventListener' : 'removeEventListener';
     outsideActionEvents.forEach((eventName) => document[fnName](eventName, this.onOutsideAction));
+    if (closeCalendarOnEsc) {
+      document[fnName]('keydown', this.onKeyDown);
+    }
   }
 
   renderInputs() {
@@ -332,6 +348,8 @@ DatePicker.propTypes = {
   clearAriaLabel: PropTypes.string,
   clearIcon: PropTypes.node,
   closeCalendar: PropTypes.bool,
+  closeCalendarOnEsc: PropTypes.bool,
+  closeCalendarOnSelect: PropTypes.bool,
   dayAriaLabel: PropTypes.string,
   dayPlaceholder: PropTypes.string,
   disableCalendar: PropTypes.bool,
